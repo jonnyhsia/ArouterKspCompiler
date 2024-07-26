@@ -61,6 +61,7 @@ public class Consts {
     private static final String TEMPLATE_PACKAGE = ".template";
     private static final String SERVICE_PACKAGE = ".service";
     private static final String MODEL_PACKAGE = ".model";
+    public static final String INAVIGATOR = FACADE_PACKAGE + TEMPLATE_PACKAGE + ".INavigator";
     public static final String IPROVIDER = FACADE_PACKAGE + TEMPLATE_PACKAGE + ".IProvider";
     public static final String IPROVIDER_GROUP = FACADE_PACKAGE + TEMPLATE_PACKAGE + ".IProviderGroup";
     public static final String IINTERCEPTOR = FACADE_PACKAGE + TEMPLATE_PACKAGE + ".IInterceptor";

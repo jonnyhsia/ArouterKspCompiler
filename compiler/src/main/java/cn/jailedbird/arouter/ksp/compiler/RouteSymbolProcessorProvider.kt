@@ -360,6 +360,10 @@ class RouteSymbolProcessorProvider : SymbolProcessorProvider {
                         it.injectConfig = injectConfig
                     }
                 }
+                RouteType.NAVIGATOR -> {
+                    logger.info(">>> Found service route: $qualifiedName <<<")
+                    RouteMetaKsp.build(route, element, RouteType.NAVIGATOR, null)
+                }
                 RouteType.SERVICE -> {
                     logger.info(">>> Found service route: $qualifiedName <<<")
                     RouteMetaKsp.build(route, element, RouteType.SERVICE, null)
@@ -369,7 +373,7 @@ class RouteSymbolProcessorProvider : SymbolProcessorProvider {
                     RouteMetaKsp.build(route, element, RouteType.PROVIDER, null)
                 }
                 else -> {
-                    throw RuntimeException("The @Route is marked on unsupported class, look at [${qualifiedName}].")
+                    throw RuntimeException("The @Route is marked on unsupported class, look at [${qualifiedName}], route type [${routeType}]")
                 }
             }
         }

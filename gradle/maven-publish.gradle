@@ -7,32 +7,35 @@ apply plugin: "maven-publish"
 afterEvaluate { project ->
     if (plugins.hasPlugin('com.android.application') || plugins.hasPlugin('com.android.library')) {
         /** Android doc*/
-        task androidJavadocs(type: Javadoc) {
+        tasks.register('androidJavadocs', Javadoc) {
             failOnError false
             source = android.sourceSets.main.java.source
             classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
         }
         /** Android doc jar*/
-        task androidJavadocsJar(type: Jar, dependsOn: androidJavadocs) {
+        tasks.register('androidJavadocsJar', Jar) {
+            dependsOn androidJavadocs
             getArchiveClassifier().convention('javadoc')
             getArchiveClassifier().set('javadoc')
             from androidJavadocs.destinationDir
         }
         /** Android source jar*/
-        task androidSourcesJar(type: Jar) {
+        tasks.register('androidSourcesJar', Jar) {
             getArchiveClassifier().convention('sources')
             getArchiveClassifier().set('sources')
             from android.sourceSets.main.java.source
         }
     } else if (plugins.hasPlugin("java")) {
         /** Java source jar*/
-        task sourcesJar(type: Jar, dependsOn: classes) {
+        tasks.register('sourcesJar', Jar) {
+            dependsOn classes
             getArchiveClassifier().convention('sources')
             getArchiveClassifier().set('sources')
             from sourceSets.main.allSource
         }
         /** Java doc jar*/
-        task javadocJar(type: Jar, dependsOn: javadoc) {
+        tasks.register('javadocJar', Jar) {
+            dependsOn javadoc
             getArchiveClassifier().convention('javadoc')
             getArchiveClassifier().set('javadoc')
             from javadoc.destinationDir
@@ -41,8 +44,10 @@ afterEvaluate { project ->
 
     if (JavaVersion.current().isJava8Compatible()) {
         allprojects {
-            tasks.withType(Javadoc) {
-                options.addStringOption('Xdoclint:none', '-quiet')
+            tasks.withType(Javadoc).tap {
+                configureEach {
+                    options.addStringOption('Xdoclint:none', '-quiet')
+                }
             }
         }
     }
@@ -69,6 +74,25 @@ afterEvaluate { project ->
                 }
 
             }
+        }
+    }
+
+    tasks.named('publishMavenPublicationToMavenLocal').configure {
+        doLast {
+            println '-----------------------------'
+            def publication = publishing.publications.maven
+            def localMavenRepo = "${System.getProperty('user.home')}/.m2/repository"
+            def artifactPath = "${localMavenRepo}/${publication.groupId.replace('.', '/')}/${publication.artifactId}"
+
+            println "Artifact information:"
+            println "Group: ${publication.groupId}"
+            println "Artifact: ${publication.artifactId}"
+            println "Version: ${publication.version}"
+            publication.artifacts.each { artifact ->
+                println "Artifact file: ${artifact.file}"
+            }
+            println "Local repository: ${artifactPath}"
+            println '-----------------------------'
         }
     }
 

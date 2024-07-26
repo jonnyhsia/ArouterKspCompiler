@@ -3,6 +3,24 @@ pluginManagement {
         // maven { url "https://maven.aliyun.com/repository/public" }
         // maven { url "https://maven.aliyun.com/repository/google" }
         // maven { url "https://maven.aliyun.com/repository/gradle-plugin" }
+        mavenLocal()
+        maven { url 'https://maven.aliyun.com/repository/public/' }
+        //阿里云私有仓库
+        maven {
+            url 'https://packages.aliyun.com/maven/repository/2356342-release-jNlzMn/'
+            credentials {
+                username '601251c54fb2132a19a10e23'
+                password 'CuV[qT5f9sFN'
+            }
+        }
+        //阿里云私有仓库
+        maven {
+            url 'https://packages.aliyun.com/maven/repository/2356342-snapshot-XRJVDn/'
+            credentials {
+                username '601251c54fb2132a19a10e23'
+                password 'CuV[qT5f9sFN'
+            }
+        }
         google()
         mavenCentral()
         gradlePluginPortal()
@@ -11,13 +29,32 @@ pluginManagement {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
+        mavenLocal()
         // maven { url "https://maven.aliyun.com/repository/public" }
         // maven { url "https://maven.aliyun.com/repository/google" }
+        maven { url 'https://maven.aliyun.com/repository/public/' }
+        //阿里云私有仓库
+        maven {
+            url 'https://packages.aliyun.com/maven/repository/2356342-release-jNlzMn/'
+            credentials {
+                username '601251c54fb2132a19a10e23'
+                password 'CuV[qT5f9sFN'
+            }
+        }
+        //阿里云私有仓库
+        maven {
+            url 'https://packages.aliyun.com/maven/repository/2356342-snapshot-XRJVDn/'
+            credentials {
+                username '601251c54fb2132a19a10e23'
+                password 'CuV[qT5f9sFN'
+            }
+        }
         google()
-        mavenCentral()
+//        mavenCentral()
         maven { url 'https://jitpack.io' }
     }
 }
+
 rootProject.name = "ArouterKspCompiler"
 include ':app'
 include ':compiler'

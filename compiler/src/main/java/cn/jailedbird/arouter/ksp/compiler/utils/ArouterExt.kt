@@ -56,7 +56,8 @@ private val ROUTE_TYPE_LIST = listOf(
     Consts.FRAGMENT_V4, // 3
     Consts.FRAGMENT_ANDROIDX, // 4
     Consts.SERVICE, // 5
-    Consts.IPROVIDER // 6
+    Consts.IPROVIDER, // 6
+    Consts.INAVIGATOR, // 7
 )
 
 internal val KSClassDeclaration.routeType: RouteType
@@ -65,5 +66,6 @@ internal val KSClassDeclaration.routeType: RouteType
         2, 3, 4 -> RouteType.FRAGMENT
         5 -> RouteType.SERVICE
         6 -> RouteType.PROVIDER
+        7 -> RouteType.NAVIGATOR
         else -> RouteType.UNKNOWN
     }
