@@ -3,7 +3,14 @@ package cn.jailedbird.arouter.ksp.compiler
 import cn.jailedbird.arouter.ksp.compiler.entity.RouteDoc
 import cn.jailedbird.arouter.ksp.compiler.entity.RouteMetaKsp
 import cn.jailedbird.arouter.ksp.compiler.entity.kspRawType
-import cn.jailedbird.arouter.ksp.compiler.utils.*
+import cn.jailedbird.arouter.ksp.compiler.utils.Consts
+import cn.jailedbird.arouter.ksp.compiler.utils.KSPLoggerWrapper
+import cn.jailedbird.arouter.ksp.compiler.utils.findAnnotationWithType
+import cn.jailedbird.arouter.ksp.compiler.utils.findModuleName
+import cn.jailedbird.arouter.ksp.compiler.utils.isSubclassOf
+import cn.jailedbird.arouter.ksp.compiler.utils.quantifyNameToClassName
+import cn.jailedbird.arouter.ksp.compiler.utils.routeType
+import cn.jailedbird.arouter.ksp.compiler.utils.typeExchange
 import com.alibaba.android.arouter.facade.annotation.Autowired
 import com.alibaba.android.arouter.facade.annotation.Route
 import com.alibaba.android.arouter.facade.enums.RouteType
@@ -11,15 +18,30 @@ import com.alibaba.android.arouter.facade.enums.TypeKind
 import com.alibaba.android.arouter.facade.model.RouteMeta
 import com.alibaba.fastjson.JSON
 import com.alibaba.fastjson.serializer.SerializerFeature
-import com.google.devtools.ksp.processing.*
+import com.google.devtools.ksp.processing.CodeGenerator
+import com.google.devtools.ksp.processing.Dependencies
+import com.google.devtools.ksp.processing.Resolver
+import com.google.devtools.ksp.processing.SymbolProcessor
+import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
+import com.google.devtools.ksp.processing.SymbolProcessorProvider
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSFile
-import com.squareup.kotlinpoet.*
+import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.MUTABLE_MAP
+import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.STRING
+import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.WildcardTypeName
+import com.squareup.kotlinpoet.asClassName
+import com.squareup.kotlinpoet.asTypeName
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.writeTo
-import java.util.*
+import java.util.TreeSet
 
 
 class RouteSymbolProcessorProvider : SymbolProcessorProvider {
@@ -33,7 +55,7 @@ class RouteSymbolProcessorProvider : SymbolProcessorProvider {
     class RouteSymbolProcessor(
         private val logger: KSPLoggerWrapper,
         private val codeGenerator: CodeGenerator,
-        options: Map<String, String>
+        options: Map<String, String>,
     ) : SymbolProcessor {
         @Suppress("SpellCheckingInspection")
         companion object {
@@ -79,7 +101,7 @@ class RouteSymbolProcessorProvider : SymbolProcessorProvider {
         }
 
         private fun categories(
-            routeMeta: RouteMeta, groupsMap: HashMap<String, TreeSet<RouteMeta>>
+            routeMeta: RouteMeta, groupsMap: HashMap<String, TreeSet<RouteMeta>>,
         ) {
             if (routeVerify(routeMeta)) {
                 logger.info(">>> Start categories, group = " + routeMeta.group + ", path = " + routeMeta.path + " <<<")
@@ -106,7 +128,7 @@ class RouteSymbolProcessorProvider : SymbolProcessorProvider {
         private fun generateGroupFiles(
             groupsMap: HashMap<String, TreeSet<RouteMeta>>,
             providersMap: MutableMap<String, RouteMeta>,
-            docSource: MutableMap<String, List<RouteDoc>>
+            docSource: MutableMap<String, List<RouteDoc>>,
         ) {
             val dependenciesMap: HashMap<String, MutableSet<KSFile>> = HashMap()
 
@@ -123,7 +145,7 @@ class RouteSymbolProcessorProvider : SymbolProcessorProvider {
                     continue
                 }
 
-                val groupName = entry.key
+                val groupName = moduleName + Consts.SEPARATOR + entry.key
                 val groupRouteMetas = entry.value
                 val dependencies = mutableSetOf<KSFile>()
                 val routeDocList = mutableListOf<RouteDoc>()
@@ -179,7 +201,8 @@ class RouteSymbolProcessorProvider : SymbolProcessorProvider {
 
                 dependenciesMap[groupName] = dependencies
 
-                val groupClassName = Consts.NAME_OF_GROUP + entry.key
+                val groupClassName =
+                    Consts.NAME_OF_GROUP + moduleName + Consts.SEPARATOR + entry.key
                 val file =
                     FileSpec.builder(Consts.PACKAGE_OF_GENERATE_FILE, groupClassName).addType(
                         TypeSpec.classBuilder(
@@ -222,6 +245,17 @@ class RouteSymbolProcessorProvider : SymbolProcessorProvider {
                     routeMeta.path,
                     routeMeta.group
                 )
+                routeMeta.alternativePaths?.forEach { path ->
+                    loadInfoFunSpecBuilder.addStatement(
+                        "$parameterName.put(%S,  %T.build(%T.${routeMeta.type}, %T::class.java, %S, %S, ${null}, ${routeMeta.priority}, ${routeMeta.extra}))",
+                        path,
+                        RouteMeta::class,
+                        RouteType::class,
+                        routeMeta.kspRawType.toClassName(),
+                        routeMeta.path,
+                        routeMeta.group
+                    )
+                }
 
                 routeMeta.kspRawType.containingFile?.let {
                     groupFileDependencies.add(it)
@@ -243,7 +277,7 @@ class RouteSymbolProcessorProvider : SymbolProcessorProvider {
 
         private fun generateRootFile(
             groupsMap: HashMap<String, TreeSet<RouteMeta>>,
-            docSource: MutableMap<String, List<RouteDoc>>
+            docSource: MutableMap<String, List<RouteDoc>>,
         ) {
             if (groupsMap.isEmpty()) {
                 return
@@ -269,6 +303,7 @@ class RouteSymbolProcessorProvider : SymbolProcessorProvider {
             val dependencies = mutableSetOf<KSFile>()
             for (entry in groupsMap) {
                 val groupName = entry.key
+                logger.warn("generateRootFile: groupName: $groupName")
 
                 if (groupName.isEmpty() || entry.value.isEmpty()) {
                     continue
@@ -276,7 +311,8 @@ class RouteSymbolProcessorProvider : SymbolProcessorProvider {
 
                 loadInfoFunSpecBuilder.addStatement(
                     "$parameterName.put(%S, %T::class.java)", groupName, ClassName(
-                        Consts.PACKAGE_OF_GENERATE_FILE, Consts.NAME_OF_GROUP + groupName
+                        Consts.PACKAGE_OF_GENERATE_FILE, Consts.NAME_OF_GROUP +
+                                moduleName + Consts.SEPARATOR + groupName
                     )
                 )
 
@@ -304,7 +340,7 @@ class RouteSymbolProcessorProvider : SymbolProcessorProvider {
 
         @Suppress("SpellCheckingInspection")
         private fun generateDocFile(
-            docSource: MutableMap<String, List<RouteDoc>>, source: MutableSet<KSFile>
+            docSource: MutableMap<String, List<RouteDoc>>, source: MutableSet<KSFile>,
         ) {
             if (generateDoc) {
                 val doc = JSON.toJSONString(docSource, SerializerFeature.PrettyFormat)
@@ -426,7 +462,7 @@ class RouteSymbolProcessorProvider : SymbolProcessorProvider {
         private fun injectParamCollector(
             element: KSClassDeclaration,
             paramsType: HashMap<String, Int>,
-            injectConfig: HashMap<String, Autowired>
+            injectConfig: HashMap<String, Autowired>,
         ) {
             for (field in element.getAllProperties()) {
                 val annotation = field.findAnnotationWithType<Autowired>()

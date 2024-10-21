@@ -5,12 +5,15 @@ import com.alibaba.android.arouter.facade.enums.RouteType;
 import com.alibaba.android.arouter.facade.model.RouteMeta;
 import com.google.devtools.ksp.symbol.KSClassDeclaration;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.util.Map;
 
 import javax.lang.model.element.Element;
 
 public class RouteMetaKsp extends RouteMeta {
     private KSClassDeclaration kspRawTypeInner;      // Raw type of ksp : KSClassDeclaration
+    private String[] alternativePaths;
 
     public RouteMetaKsp(Route route, Element rawType, RouteType type, Map<String, Integer> paramsType) {
         super(type, rawType, null, route.name(), route.path(), route.group(), paramsType, route.priority(), route.extras());
@@ -27,10 +30,19 @@ public class RouteMetaKsp extends RouteMeta {
     public static RouteMeta build(Route route, KSClassDeclaration kspRawType, RouteType type, Map<String, Integer> paramsType) {
         RouteMetaKsp meta = new RouteMetaKsp(route, null, type, paramsType);
         meta.kspRawTypeInner = kspRawType;
+        if (route.alternativePaths() != null && route.alternativePaths().length > 0) {
+            meta.alternativePaths = route.alternativePaths();
+        }
         return meta;
     }
 
     public KSClassDeclaration getKspRawTypeInner() {
         return kspRawTypeInner;
+    }
+
+    @Nullable
+    @Override
+    public String[] getAlternativePaths() {
+        return alternativePaths;
     }
 }
