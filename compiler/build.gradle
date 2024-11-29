@@ -22,7 +22,7 @@ tasks.withType(KotlinCompile).configureEach {
 }
 
 dependencies {
-    implementation 'com.social.arouter:arouter-annotation:1.0.3'
+    implementation 'com.social.arouter:arouter-annotation:1.0.2.6'
 
     implementation 'com.squareup:javapoet:1.13.0'
 
