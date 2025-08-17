@@ -397,8 +397,12 @@ class RouteSymbolProcessorProvider : SymbolProcessorProvider {
                     }
                 }
                 RouteType.NAVIGATOR -> {
-                    logger.info(">>> Found service route: $qualifiedName <<<")
+                    logger.info(">>> Found navigator route: $qualifiedName <<<")
                     RouteMetaKsp.build(route, element, RouteType.NAVIGATOR, null)
+                }
+                RouteType.RUNNABLE -> {
+                    logger.info(">>> Found runnable route: $qualifiedName <<<")
+                    RouteMetaKsp.build(route, element, RouteType.RUNNABLE, null)
                 }
                 RouteType.SERVICE -> {
                     logger.info(">>> Found service route: $qualifiedName <<<")

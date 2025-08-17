@@ -73,9 +73,26 @@ afterEvaluate { project ->
                     artifact javadocJar
                 }
 
+                repositories {
+                    //阿里云私有仓库
+                    maven {
+                        if (false) {
+                            name('Snapshot')
+                            url 'https://packages.aliyun.com/maven/repository/2356342-snapshot-XRJVDn/'
+                        } else {
+                            name('Release')
+                            url 'https://packages.aliyun.com/maven/repository/2356342-release-jNlzMn/'
+                        }
+                        credentials {
+                            username '601251c54fb2132a19a10e23'
+                            password 'CuV[qT5f9sFN'
+                        }
+                    }
+                }
             }
         }
     }
+
 
     tasks.named('publishMavenPublicationToMavenLocal').configure {
         doLast {

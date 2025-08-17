@@ -58,6 +58,7 @@ private val ROUTE_TYPE_LIST = listOf(
     Consts.SERVICE, // 5
     Consts.IPROVIDER, // 6
     Consts.INAVIGATOR, // 7
+    Consts.RUNNABLE, // 8
 )
 
 internal val KSClassDeclaration.routeType: RouteType
@@ -67,5 +68,6 @@ internal val KSClassDeclaration.routeType: RouteType
         5 -> RouteType.SERVICE
         6 -> RouteType.PROVIDER
         7 -> RouteType.NAVIGATOR
+        8 -> RouteType.RUNNABLE
         else -> RouteType.UNKNOWN
     }
